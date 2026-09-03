@@ -1,1 +1,0 @@
-{"root":["./src/App.tsx","./src/main.tsx","./src/theme.ts","./src/components/Table.tsx","./src/engine/cards.ts","./src/engine/defaultDeck.ts","./src/engine/game.ts","./src/engine/rng.ts","./tests/engine.test.ts"],"version":"5.8.3"}
