@@ -53,6 +53,12 @@ npm test         # 引擎测试
 
 引擎在 `src/engine/game.ts`，是纯函数状态机（`newGame / pick / done / skip / stop / challenge / setDecree / acceptDecree`），不依赖 React，可以直接拿去接别的界面或者接一个 AI 玩家。抽牌走 `crypto.getRandomValues`，不用 `Math.random`。
 
+## 让 AI 上桌（MCP）
+
+`worker/` 里是同一个引擎的 Cloudflare Worker 版：一桌一个 Durable Object，暴露成 MCP 工具
+（`new_game / state / pick / done / skip / stop / challenge / set_decree / accept_decree`），
+AI 客户端接一条 URL 就能调工具玩。部署和协议细节见 [`worker/README.md`](worker/README.md)。
+
 ## 许可证
 
 **PolyForm Noncommercial 1.0.0**，见 `LICENSE`。一句话：可以用、可以改、可以分享，**不能商用**，再分发必须带上这份许可和出处。牌面文案和代码一样受此约束。

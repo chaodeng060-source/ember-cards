@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ember-cards",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "durable_objects": {
+    "bindings": [{ "name": "TABLE", "class_name": "Table" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Table"] }],
+  "observability": { "enabled": true }
+}

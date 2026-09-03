@@ -6,7 +6,7 @@ export interface Rng {
 
 function randomUint32(): number {
   const buf = new Uint32Array(1)
-  globalThis.crypto.getRandomValues(buf)
+  crypto.getRandomValues(buf)
   return buf[0]
 }
 

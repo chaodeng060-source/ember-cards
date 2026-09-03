@@ -1,5 +1,7 @@
 node_modules/
 dist/
 tsconfig.tsbuildinfo
+worker/worker-configuration.d.ts
+worker/.wrangler/
 *.log
 .DS_Store
