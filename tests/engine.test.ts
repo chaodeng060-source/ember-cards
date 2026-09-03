@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
-import { loadDeck } from '../src/engine/cards.ts'
+import { loadDeck, mergeDecks, parseCustomCards } from '../src/engine/cards.ts'
 import {
   acceptDecree,
   challenge,
@@ -26,8 +26,8 @@ function forceCard(st: GameState, no: number): GameState {
   return { ...st, currentCard: { ...card, actor: st.turn, pickedKind: 'dare' } }
 }
 
-test('deck has 60 cards across five tiers with no duplicate numbers', () => {
-  assert.equal(deck.cards.length, 60)
+test('deck has 100 cards across five tiers with no duplicate numbers', () => {
+  assert.equal(deck.cards.length, 100)
   for (const t of [1, 2, 3, 4, 5] as const) {
     assert.ok(deck.cards.filter((c) => c.tier === t).length >= 10, `tier ${t}`)
     assert.ok(deck.tierNames[t])
@@ -151,4 +151,35 @@ test('stop is terminal and works from any state', () => {
 test('history records every step', () => {
   const st = done(pick(newGame('slow'), 'truth', undefined, opts))
   assert.deepEqual(st.history.map((h) => h.event), ['new', 'pick', 'done'])
+})
+
+test('parseCustomCards reads tier/kind/text lines and skips garbage', () => {
+  const { cards, skipped } = parseCustomCards(
+    '3 大冒险 用嘴解开对方一颗扣子。\n' +
+    '\n' +
+    '5 truth 今晚最想从哪一步开始？\n' +
+    '9 大冒险 档位越界\n' +
+    '2 胡说 类型不认识\n' +
+    '1 真心话\n',
+  )
+  assert.equal(cards.length, 2)
+  assert.equal(skipped, 3)
+  assert.deepEqual(cards.map((c) => [c.tier, c.kind]), [[3, 'dare'], [5, 'truth']])
+  assert.ok(cards.every((c) => c.no >= 9001))
+})
+
+test('custom cards join the draw pool via mergeDecks', () => {
+  const { cards } = parseCustomCards('4 大冒险 只抽得到我这一张。')
+  const merged = mergeDecks(deck, cards)
+  assert.equal(merged.cards.length, deck.cards.length + 1)
+  const onlyCustom = { pick: <T,>(items: readonly T[]) => items.find((c) => (c as { no: number }).no >= 9001) ?? items[0] }
+  let st = newGame('slow')
+  st = { ...st, tier: 4 as const }
+  st = pick(st, 'dare', undefined, { deck: merged, rng: onlyCustom })
+  assert.ok(st.currentCard && st.currentCard.no >= 9001)
+  assert.equal(st.currentCard!.text, '只抽得到我这一张。')
+})
+
+test('mergeDecks with no extras returns the base deck untouched', () => {
+  assert.equal(mergeDecks(deck, []), deck)
 })

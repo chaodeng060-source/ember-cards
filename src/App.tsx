@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Table from './components/Table.tsx'
 import { DEFAULT_DECK } from './engine/defaultDeck.ts'
+import { mergeDecks, parseCustomCards } from './engine/cards.ts'
 import {
   acceptDecree,
   challenge,
@@ -25,6 +26,8 @@ export interface Settings {
   wildEnabled: boolean
   // 安全词：你们自己的那个词。按下去就是真停，不讨价。
   safeword: string
+  // 我们的牌：一行一张「档位 类型 文案」，混进抽牌池；分享=把这段文本发给对方粘贴。
+  customCardsText: string
 }
 
 interface Persisted {
@@ -36,6 +39,7 @@ const DEFAULT_SETTINGS: Settings = {
   names: { a: '甲', b: '乙' },
   wildEnabled: true,
   safeword: '停',
+  customCardsText: '',
 }
 
 function load(): Persisted {
@@ -56,6 +60,9 @@ export default function App() {
   const [{ settings, game }, setPersisted] = useState<Persisted>(load)
   const [error, setError] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  const customParsed = useMemo(() => parseCustomCards(settings.customCardsText), [settings.customCardsText])
+  const deck = useMemo(() => mergeDecks(DEFAULT_DECK, customParsed.cards), [customParsed])
 
   useEffect(() => {
     try {
@@ -84,7 +91,7 @@ export default function App() {
 
   const actions = {
     newGame: (mode: Mode) => run(() => newGame(mode, { wildEnabled: settings.wildEnabled })),
-    pick: (kind: 'truth' | 'dare', tier?: Tier) => run(() => (game ? pick(game, kind, tier, { deck: DEFAULT_DECK }) : null)),
+    pick: (kind: 'truth' | 'dare', tier?: Tier) => run(() => (game ? pick(game, kind, tier, { deck }) : null)),
     done: () => run(() => (game ? done(game) : null)),
     skip: () => run(() => (game ? skip(game) : null)),
     stop: () => run(() => (game ? stop(game) : null)),
@@ -98,7 +105,7 @@ export default function App() {
     <div className="app">
       <Table
         game={game}
-        deck={DEFAULT_DECK}
+        deck={deck}
         settings={settings}
         error={error}
         actions={actions}
@@ -124,6 +131,19 @@ export default function App() {
               <input type="checkbox" checked={settings.wildEnabled} onChange={(e) => setSettings({ wildEnabled: e.target.checked })} />
               抽牌池混入变数牌（下一局生效）
             </label>
+            <label>
+              我们的牌（一行一张：档位 类型 文案，立刻进抽牌池）
+              <textarea
+                value={settings.customCardsText}
+                rows={5}
+                placeholder={'例：\n3 大冒险 用嘴解开对方一颗扣子。\n5 真心话 今晚最想从哪一步开始？'}
+                onChange={(e) => setSettings({ customCardsText: e.target.value })}
+              />
+            </label>
+            <p className="hint">
+              已识别 {customParsed.cards.length} 张{customParsed.skipped > 0 ? `，${customParsed.skipped} 行没看懂（格式：档位1-5 真心话/大冒险 文案）` : ''}。
+              想分享给别人：全选这段文本发过去，对方粘贴进同一个框就行。
+            </p>
             <button type="submit" className="btn btn-primary">好了</button>
           </form>
         </div>
